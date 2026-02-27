@@ -1,0 +1,10 @@
+# Test data and outputs
+Bulletin 1 Test/
+Addendum B Test/
+overlay/
+*.pdf
+
+# Python
+__pycache__/
+*.pyc
+.venv/
