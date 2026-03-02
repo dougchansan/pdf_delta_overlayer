@@ -6,10 +6,23 @@ Produces **Bluebeam-style overlay comparisons** between old and new drawing sets
 
 | Color   | Meaning                        |
 |---------|--------------------------------|
-| **Blue**  | Lines only in the **old** drawing (removed) |
-| **Red**   | Lines only in the **new** drawing (added)   |
+| **Blue**  | Lines only in the **new** drawing (added) |
+| **Red**   | Lines only in the **old** drawing (removed / "dead") |
 | **Black** | Lines in **both** drawings (unchanged)      |
 | White   | Background (no ink in either)  |
+
+## Auto-Alignment
+
+Drawing revisions sometimes have small registration offsets (a few pixels) between the old and new sheets, caused by differences in print drivers, export settings, or page scaling. These offsets produce false-positive red/blue ghosting on lines that haven't actually changed.
+
+The tool automatically detects and corrects these offsets using **phase correlation** (FFT-based). For each sheet pair it:
+
+1. Binarizes both renderings and crops to the center region (avoiding borders and title blocks)
+2. Computes the cross-power spectrum between the two images
+3. Finds the peak in the inverse FFT to determine the translational shift
+4. Applies the shift to the new image before compositing
+
+Offsets larger than 30 px are ignored (indicating a genuinely different layout rather than a registration shift). Auto-alignment can be disabled with `--no-align`.
 
 ## Prerequisites
 
@@ -17,11 +30,12 @@ Produces **Bluebeam-style overlay comparisons** between old and new drawing sets
 - [PyMuPDF](https://pymupdf.readthedocs.io/) (PDF rendering)
 - [Pillow](https://pillow.readthedocs.io/) (image compositing)
 - NumPy
+- [SciPy](https://scipy.org/) (image shifting for auto-alignment)
 
 ## Installation
 
 ```bash
-pip install PyMuPDF Pillow numpy
+pip install PyMuPDF Pillow numpy scipy
 ```
 
 ## Folder Prep
@@ -69,6 +83,12 @@ Shows what will be paired, what's new, and what's old-only — without writing a
 python overlay.py --old "Bulletin 1" --new "Addendum B" --dpi 300
 ```
 
+### Disable auto-alignment
+
+```bash
+python overlay.py --old "Bulletin 1" --new "Addendum B" --no-align
+```
+
 ### Custom output location
 
 ```bash
@@ -85,6 +105,7 @@ Puts `Overlays/` and `NewSheet/` inside `Results/` instead of inside the `--new`
 | `--new`         | *(required)*     | Folder with new/revised drawing set              |
 | `--output-dir`  | inside `--new`   | Base output directory for `Overlays/` and `NewSheet/` |
 | `--dpi`         | `150`            | Render resolution in dots per inch               |
+| `--no-align`    | off              | Disable auto-alignment (skip offset detection)   |
 | `--dry-run`     | off              | Show match plan without processing               |
 
 ## DPI Guidance
